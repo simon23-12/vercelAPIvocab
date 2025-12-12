@@ -1,14 +1,11 @@
 export default async function handler(req, res) {
   console.log('=== REQUEST START ===');
-  console.log('Method:', req.method);
-  console.log('Body:', JSON.stringify(req.body));
   
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   
   if (req.method === 'OPTIONS') {
-    console.log('OPTIONS request, returning 200');
     return res.status(200).end();
   }
   
@@ -27,21 +24,25 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'API key not configured' });
     }
     
-    console.log('Calling Anthropic with:', { german, correct, userAnswer });
+    console.log('Checking:', { german, correct, userAnswer });
     
-    // BESSERER PROMPT - akzeptiert Synonyme!
-    const prompt = `You are an English teacher checking a student's vocabulary translation.
+    // SEHR LIBERALER PROMPT - akzeptiert fast alles was Sinn macht
+    const prompt = `You are a friendly English teacher. A student is learning vocabulary.
 
-German word/phrase: "${german}"
-Expected English translation: "${correct}"
-Student's answer: "${userAnswer}"
+German: "${german}"
+Expected answer: "${correct}"
+Student wrote: "${userAnswer}"
 
-Are these translations equivalent? Consider:
-- Synonyms are acceptable (e.g., "athletic" = "sporty")
-- Minor grammatical variations are acceptable (e.g., "to be" vs "be")
-- The meaning should be the same
+Question: Does the student's answer mean basically the same thing?
 
-Reply with ONLY ONE WORD: either "CORRECT" or "WRONG"`;
+Important rules:
+- Accept ALL synonyms (religious = faithful, athletic = sporty, etc.)
+- Accept minor word order differences
+- Accept "to" with or without infinitives
+- Accept British vs American spelling
+- Be LENIENT - if it's close enough, accept it!
+
+Answer ONLY with the word "CORRECT" or "WRONG".`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -52,7 +53,8 @@ Reply with ONLY ONE WORD: either "CORRECT" or "WRONG"`;
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 20,
+        max_tokens: 50,
+        temperature: 0.3,
         messages: [{
           role: 'user',
           content: prompt
@@ -61,26 +63,22 @@ Reply with ONLY ONE WORD: either "CORRECT" or "WRONG"`;
     });
     
     const responseText = await response.text();
-    console.log('Anthropic status:', response.status);
-    console.log('Anthropic response:', responseText);
+    console.log('Anthropic:', response.status, responseText);
     
     if (!response.ok) {
-      return res.status(500).json({ 
-        error: 'Anthropic API failed', 
-        details: responseText 
-      });
+      return res.status(500).json({ error: 'API failed', details: responseText });
     }
     
     const data = JSON.parse(responseText);
     const aiResponse = data.content[0].text.trim();
     const isCorrect = aiResponse.toUpperCase().includes('CORRECT');
     
-    console.log('Result:', { aiResponse, isCorrect });
+    console.log('=> Result:', aiResponse, '=', isCorrect);
     
     return res.status(200).json({ isCorrect, aiResponse });
     
   } catch (error) {
-    console.error('Error:', error.message);
+    console.error('Error:', error);
     return res.status(500).json({ error: error.message });
   }
 }
