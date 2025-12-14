@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   }
   
   try {
-    const { german, correct, userAnswer } = req.body;
+    const { german, correct, userAnswer, strictMode } = req.body;
     
     if (!german || !correct || !userAnswer) {
       return res.status(400).json({ error: 'Missing parameters' });
@@ -24,23 +24,36 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'API key not configured' });
     }
     
-    console.log('Checking:', { german, correct, userAnswer });
+    console.log('Checking:', { german, correct, userAnswer, strictMode });
     
-    // SEHR LIBERALER PROMPT - akzeptiert fast alles was Sinn macht
-    const prompt = `You are a friendly English teacher. A student is learning vocabulary.
+    // STRENGER PROMPT - Tippfehler = falsch, nur echte Synonyme akzeptiert
+    const prompt = `You are a strict English vocabulary teacher grading a test.
 
-German: "${german}"
-Expected answer: "${correct}"
+German word: "${german}"
+Correct English answer: "${correct}"
 Student wrote: "${userAnswer}"
 
-Question: Does the student's answer mean basically the same thing?
+Question: Is the student's answer EXACTLY correct?
 
-Important rules:
-- Accept ALL synonyms (religious = faithful, athletic = sporty, etc.)
-- Accept minor word order differences
-- Accept "to" with or without infinitives
-- Accept British vs American spelling
-- Be LENIENT - if it's close enough, accept it!
+STRICT RULES:
+1. Spelling must be PERFECT - even one wrong letter = WRONG
+   - "whistel" is WRONG (correct: "whistle")
+   - "comercial" is WRONG (correct: "commercial")
+   - Missing letters, extra letters, or swapped letters = WRONG
+   
+2. Accept ONLY:
+   - Exact match (case-insensitive)
+   - True synonyms (e.g., "religious" = "faithful", "athletic" = "sporty")
+   - British vs American spelling (e.g., "colour" = "color")
+   - With/without "to" for infinitives (e.g., "to whistle" = "whistle")
+   
+3. REJECT:
+   - Spelling errors (even minor typos)
+   - Wrong word endings
+   - Letter transpositions
+   - Anything that is not the exact word or a genuine synonym
+
+Be STRICT. This is a test. Spelling errors must count as wrong.
 
 Answer ONLY with the word "CORRECT" or "WRONG".`;
 
@@ -54,7 +67,7 @@ Answer ONLY with the word "CORRECT" or "WRONG".`;
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 50,
-        temperature: 0.3,
+        temperature: 0,  // Reduziert auf 0 für konsistentere Bewertung
         messages: [{
           role: 'user',
           content: prompt
