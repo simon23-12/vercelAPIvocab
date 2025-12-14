@@ -26,36 +26,42 @@ export default async function handler(req, res) {
     
     console.log('Checking:', { german, correct, userAnswer, strictMode });
     
-    // STRENGER PROMPT - Tippfehler = falsch, nur echte Synonyme akzeptiert
-    const prompt = `You are a strict English vocabulary teacher grading a test.
+    // SEHR STRENGER PROMPT - Selbst kleine Tippfehler = falsch
+    const prompt = `You are a strict English vocabulary teacher grading a spelling test.
 
 German word: "${german}"
 Correct English answer: "${correct}"
 Student wrote: "${userAnswer}"
 
-Question: Is the student's answer EXACTLY correct?
+CRITICAL: Is the spelling EXACTLY correct?
 
-STRICT RULES:
-1. Spelling must be PERFECT - even one wrong letter = WRONG
-   - "whistel" is WRONG (correct: "whistle")
-   - "comercial" is WRONG (correct: "commercial")
-   - Missing letters, extra letters, or swapped letters = WRONG
-   
-2. Accept ONLY:
-   - Exact match (case-insensitive)
-   - True synonyms (e.g., "religious" = "faithful", "athletic" = "sporty")
-   - British vs American spelling (e.g., "colour" = "color")
-   - With/without "to" for infinitives (e.g., "to whistle" = "whistle")
-   
-3. REJECT:
-   - Spelling errors (even minor typos)
-   - Wrong word endings
-   - Letter transpositions
-   - Anything that is not the exact word or a genuine synonym
+STRICT SPELLING RULES:
+❌ ANY spelling mistake = WRONG, including:
+   - "occean" is WRONG (correct: "ocean") - extra 'c'
+   - "girrl" is WRONG (correct: "girl") - extra 'r'  
+   - "castel" is WRONG (correct: "castle") - missing 'e'
+   - "whistel" is WRONG (correct: "whistle") - wrong letter
+   - "comercial" is WRONG (correct: "commercial") - missing 'm'
 
-Be STRICT. This is a test. Spelling errors must count as wrong.
+✅ ONLY accept as CORRECT:
+   1. PERFECT spelling (letter-for-letter match)
+   2. True synonyms ("ocean" = "sea", "boy" = "lad", "town" = "city")
+   3. British vs American ("colour"="color", "centre"="center")
+   4. With/without "to" for verbs ("(to) look" = "look")
 
-Answer ONLY with the word "CORRECT" or "WRONG".`;
+❌ REJECT everything else:
+   - Missing letters
+   - Extra letters
+   - Wrong letters
+   - Swapped letters
+   - Different word endings
+   - Phonetic spellings
+
+This is a SPELLING test. One wrong letter = FAIL.
+
+Think carefully: Is "${userAnswer}" the EXACT correct spelling of a valid English word that means "${correct}"?
+
+Answer ONLY: "CORRECT" or "WRONG"`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
