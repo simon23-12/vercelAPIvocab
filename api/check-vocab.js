@@ -26,40 +26,39 @@ export default async function handler(req, res) {
     
     console.log('Checking:', { german, correct, userAnswer, strictMode });
     
-    // SEHR STRENGER PROMPT - Selbst kleine Tippfehler = falsch
-    const prompt = `You are a strict English vocabulary teacher grading a spelling test.
+    // ULTRA-STRIKTER PROMPT - Null Toleranz für Fehler
+    const prompt = `You are grading a spelling test. The student must spell words PERFECTLY.
 
-German word: "${german}"
-Correct English answer: "${correct}"
+German: "${german}"
+Correct answer: "${correct}"
 Student wrote: "${userAnswer}"
 
-CRITICAL: Is the spelling EXACTLY correct?
+ZERO TOLERANCE RULES:
+1. The student's answer must be EXACTLY correct OR a perfect synonym
+2. ANY spelling error = WRONG
+   - Missing letters = WRONG
+   - Extra letters = WRONG  
+   - Wrong letters = WRONG
+3. The word must actually EXIST in English
+   - "meannn" is NOT a word = WRONG
+   - "remeber" is NOT a word (correct: remember) = WRONG
+   - "somethhinng" is NOT a word = WRONG
 
-STRICT SPELLING RULES:
-❌ ANY spelling mistake = WRONG, including:
-   - "occean" is WRONG (correct: "ocean") - extra 'c'
-   - "girrl" is WRONG (correct: "girl") - extra 'r'  
-   - "castel" is WRONG (correct: "castle") - missing 'e'
-   - "whistel" is WRONG (correct: "whistle") - wrong letter
-   - "comercial" is WRONG (correct: "commercial") - missing 'm'
+EXAMPLES OF WRONG ANSWERS:
+- "meannn sth" for "meaningful" = WRONG (not a real word)
+- "remeber somethhinng" for "memorable" = WRONG (spelling errors)
+- "exciteng" for "gripping" = WRONG (wrong word entirely)
+- "artt" for "artificial" = WRONG (not a real word)
+- "swiep" for "swipe" = WRONG (spelling error)
+- "sequenec" for "sequence" = WRONG (spelling error)
+- "dronee" for "drone" = WRONG (extra e)
 
-✅ ONLY accept as CORRECT:
-   1. PERFECT spelling (letter-for-letter match)
-   2. True synonyms ("ocean" = "sea", "boy" = "lad", "town" = "city")
-   3. British vs American ("colour"="color", "centre"="center")
-   4. With/without "to" for verbs ("(to) look" = "look")
+ONLY accept as CORRECT:
+- Perfect spelling match: "exercise" = "exercise" ✓
+- True synonyms with perfect spelling: "gripping" = "exciting" ✓
+- British/American variants: "colour" = "color" ✓
 
-❌ REJECT everything else:
-   - Missing letters
-   - Extra letters
-   - Wrong letters
-   - Swapped letters
-   - Different word endings
-   - Phonetic spellings
-
-This is a SPELLING test. One wrong letter = FAIL.
-
-Think carefully: Is "${userAnswer}" the EXACT correct spelling of a valid English word that means "${correct}"?
+Check: Is "${userAnswer}" a real English word spelled perfectly that means "${correct}"?
 
 Answer ONLY: "CORRECT" or "WRONG"`;
 
